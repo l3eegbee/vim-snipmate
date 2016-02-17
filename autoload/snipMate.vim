@@ -3,12 +3,6 @@ if !exists('g:snipMate')
   let g:snipMate = {}
 endif
 
-try
-	call tlib#input#List('mi', '', [])
-catch /.*/
-	echoe "you're missing tlib. See install instructions at ".expand('<sfile>:h:h').'/README.md'
-endtry
-
 fun! Filename(...) abort
 	let filename = expand('%:t:r')
 	if filename == '' | return a:0 == 2 ? a:2 : '' | endif
@@ -411,6 +405,11 @@ fun! snipMate#GetSnippets(scopes, trigger) abort
 endf
 
 function! snipMate#OpenSnippetFiles() abort
+	if !exists('g:loaded_tlib') || g:loaded_tlib < 41)
+		echom "tlib is required for this command."
+		return
+	endif
+
 	let files = []
 	let scopes_done = []
 	let exists = []
@@ -444,7 +443,7 @@ fun! snipMate#GetSnippetsForWordBelowCursor(word, exact) abort
 	" so 'foo.bar..baz' becomes ['foo', '.', 'bar', '.', '.', 'baz']
 	" First split just after a \W and then split each resultant string just
 	" before a \W
-	let parts = filter(tlib#list#Flatten(
+	let parts = filter(snipmate#util#flatten(
 				\ map(split(a:word, '\W\zs'), 'split(v:val, "\\ze\\W")')),
 				\ '!empty(v:val)')
 	" Only look at the last few possibilities. Too many can be slow.
@@ -491,21 +490,21 @@ fun! s:ChooseSnippet(snippets) abort
 	let keys = keys(a:snippets)
 	let i = 1
 	for snip in keys
-		let snippet += [i.'. '.snip]
+		let snippet += [i . '. ' . snip]
 		let i += 1
 	endfor
-	if len(snippet) == 1
-		" there's only a single snippet, choose it
-		let idx = 0
-	else
-		let idx = tlib#input#List('si','select snippet by name',snippet) -1
-		if idx == -1
-			return ''
+
+	let idx = 0
+	if len(snippet) > 1
+		if exists('g:loaded_tlib') && g:loaded_tlib >= 41
+			let idx = tlib#input#List('si','select snippet by name',snippet) - 1
+		else
+			let idx = inputlist(snippet + ['Select a snippet by number']) - 1
 		endif
 	endif
 	" if a:snippets[..] is a String Call returns it
 	" If it's a function or a function string the result is returned
-	return funcref#Call(a:snippets[keys(a:snippets)[idx]])
+	return (idx == -1) ? '' : funcref#Call(a:snippets[keys(a:snippets)[idx]])
 endf
 
 fun! snipMate#WordBelowCursor() abort

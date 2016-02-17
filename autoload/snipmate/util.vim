@@ -20,3 +20,17 @@ function! snipmate#util#eval(arg)
     endtry
     return type(ret) == type('') ? ret : string(ret)
 endfunction
+
+" More or less taken from tlib#list#Flatten()
+function! snipmate#util#flatten(list)
+    let ret = []
+    for item in a:list
+        if type(item) == type([])
+            call extend(ret, snipmate#util#flatten(item))
+        else
+            call add(ret, item)
+        endif
+        unlet item " Avoid E706
+    endfor
+    return ret
+endfunction
