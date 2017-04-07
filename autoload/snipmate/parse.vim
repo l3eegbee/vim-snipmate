@@ -307,7 +307,8 @@ function! s:create_mirror_stub(mirror, dict)
 endfunction
 
 function! snipmate#parse#snippet(text, ...) abort
-    let parser = s:new_parser(a:text)
+    let stext = substitute(a:text, '`\([^`]*\)`', '\=eval(submatch(1))', 'g')
+    let parser = s:new_parser(stext)
     call parser.parse()
     if !(a:0 && a:1)
         call parser.create_stubs()
